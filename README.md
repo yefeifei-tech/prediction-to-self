@@ -2,7 +2,7 @@
 
 Official code for the paper *From Prediction to Self: Developmental Conditions for Agency in Minimal Neural Systems*.
 
-**Paper:** [arXiv:XXXX.XXXXX](https://arxiv.org/abs/XXXX.XXXXX) *(link coming soon)*
+**Paper:** [arXiv:2606.05605](https://arxiv.org/abs/2606.05605)
 
 ## Overview
 
@@ -40,7 +40,7 @@ prediction-to-self/
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/prediction-to-self.git
+git clone https://github.com/yefeifei-tech/prediction-to-self.git
 cd prediction-to-self
 pip install -r requirements.txt
 ```
@@ -70,7 +70,7 @@ python figures/gen_fig1_attractor.py
 @article{ye2026prediction,
   title   = {From Prediction to Self: Developmental Conditions for Agency in Minimal Neural Systems},
   author  = {Ye, Evan},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  journal = {arXiv preprint arXiv:2606.05605},
   year    = {2026}
 }
 ```
