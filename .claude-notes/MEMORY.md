@@ -1,0 +1,4 @@
+- [User: CET framework author](user_cet_framework.md) — Evan Ye, developing Conditional Emergence Theory; "From Prediction to Self" is Paper 1 in the series
+- [Feedback: extensions in separate folders](feedback_extension_folders.md) — never modify existing `experiments/` or `core/` when adding new experiments
+- [Project: Level 3→4 meta-encoding-gap experiment](project_level4_metagap.md) — planned extension testing recursive encoding gap via ρ_t input channel (currently paused)
+- [Project: Paper 1 methodology 8-step evidence chain](project_paper1_methodology_chain.md) — canonical causal-inference framing of Paper 1's proof structure with common misreadings called out
