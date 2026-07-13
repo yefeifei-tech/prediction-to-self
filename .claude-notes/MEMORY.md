@@ -2,3 +2,5 @@
 - [Feedback: extensions in separate folders](feedback_extension_folders.md) — never modify existing `experiments/` or `core/` when adding new experiments
 - [Project: Level 3→4 meta-encoding-gap experiment](project_level4_metagap.md) — planned extension testing recursive encoding gap via ρ_t input channel (currently paused)
 - [Project: Paper 1 methodology 8-step evidence chain](project_paper1_methodology_chain.md) — canonical causal-inference framing of Paper 1's proof structure with common misreadings called out
+- [Project: architecture → causal-ladder lens](project_architecture_causal_ladder.md) — each experiment's Pearl causal ceiling is fixed by its architecture (esp. whether the prediction head takes action as explicit input)
+- [Project: exp2 strict boundary](project_exp2_strict_boundary.md) — Recovery licenses "Implicit Causal Utilization" only, NOT "self-world decomposition"; the "self" label is experimenter-imposed, and exp3's 12% is the paper's own admission
