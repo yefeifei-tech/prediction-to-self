@@ -11,7 +11,7 @@ Code repository for **Paper 1**: *From Prediction to Self: Developmental Conditi
 ## Author & framework
 
 - **Author**: Evan Ye
-- Developing **CET (Conditional Emergence Theory)** — this paper is **Paper 1** of the series
+- Developing **CET (Constraint Emergence Theory)** — this paper is **Paper 1** of the series
 - CET §13.8 core rule: each level of emergence requires **two conditions simultaneously**:
   1. **Information value**: `I(X; target | existing conditions) > 0`
   2. **Architectural pathway**: information channel must exist for X to reach the predictive computation
