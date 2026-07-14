@@ -724,6 +724,8 @@ Disconnect 后 world 只有 signal（AR(1) noise 突然消失）：
 
 **代码佐证**：`long_disconnect_test` 断开阶段（[exp2_causal.py:250](../experiments/exp2_causal.py#L250)）**根本不调用 `get_action()`**——recovery 差异是**训练时 pred.weight 学到的结构 + h 状态漂移**的属性，连"内部动作持续生成"都算不上，更支持 utilization 读法。
 
+**归因封死（两模型只差一处）**：两组在 `train_model` 里都先 `torch.manual_seed(42)` 再建模型（[exp2_causal.py:89](../experiments/exp2_causal.py#L89)），所以 **GRU 与 W_action 逐字节相同、且全程冻结**；唯一被训练、也唯一不同的参数是 `pred.weight`。断开阶段两组 obs 相同、GRU 相同 → h 收敛后也相同，故 **recovery 差异 100% 只能归因到 `pred.weight`**——即训练时 pred 学到的读出结构：Causal 学到**可分解**读出（obs0 = signal 分量 + 我的动作分量，两项皆 h 的函数），Control 只能学到**纠缠**读出（噪声外源、不可从 h 重建）。**测试期 pred 冻结，把这个训练时的差异原样读出**——这正是"机制性分解落在 `pred.weight`、不在 h"的实证。（若误以为"两组 obs 相同就该恢复一样"，漏的就是"pred 测试期也冻结"这一点。）
+
 **Paper 自己的承认**：**exp3 的 trailing recall ≈ 12%** 就是量化证据——exp2 那种因果利用**读不出**"我在动"。所以"如果 exp2 已证明 decomposition，exp3/4/5 就多余了"——它们的存在本身反证了 exp2 未达 self-representation。
 
 **严格表述**（实验与结论完全对齐）：
@@ -750,6 +752,8 @@ Disconnect 后 world 只有 signal（AR(1) noise 突然消失）：
 - **BinaryProbe 用 detached h** 测 trailing 时段能否读出
 
 **BurstGate 机制**：随机开关 action bursts，产生 active/trailing/quiet 三个 phase。`trailing` 是 action 刚停后 50 步——测的是"h 能不能在 action 消失后还记得刚才动过"。
+
+**为什么用随机动作，而不是 exp2 的 `action = W_action(h)`**：exp3 测的是**可读性/保留**——trailing 期 probe 读得出"我动过"必须**只能**归因于"h 真的保留了它"。若动作是 h 的函数（内源），就引入 **h→action 捷径**：probe 可能靠"h 落在会产生动作的区域"作弊而非靠保留，测量被污染；aux 的三类标签也会和 h 纠缠。用**随机（外源、与 h 解耦）**动作，动作在 obs 消失后唯一的痕迹只能来自真实保留 → recall 是"保留"的**干净测量**。这也让 **exp3/exp4 只差 trace 一维**：动作方式两臂同为中性随机，12%→60% 才能干净归因到 trace 通道。**「动作从哪来（随机 vs f(h)）」与「有没有 trace 通道」是两条正交的轴**——exp2 拧因果轴，exp3/exp4 拧可读轴。
 
 **期望结果**：**trailing recall ≈ 12%**（接近随机，encoding gap 存在）
 
