@@ -1,7 +1,8 @@
 - [User: CET framework author](user_cet_framework.md) — Evan Ye, Constraint Emergence Theory; §13.8 (condition set expansion) + §9.8 (two probes) + §6.4-6.5 (local vs global)
 - [Feedback: extensions in separate folders](feedback_extension_folders.md) — never modify existing `experiments/` or `core/` when adding new experiments
 - [Project: Paper 1 methodology 8-step evidence chain](project_paper1_methodology_chain.md) — dual Pearl+CET framing of Paper 1's proof structure with common misreadings corrected
-- [Project: Paper 1 as CET §13.8 demonstration](project_paper1_as_cet_demonstration.md) — canonical statement that Paper 1 is minimal empirical anchor for §13.8, not a standalone "encoding gap discovery"
+- [Project: Paper 1 as CET §13.8 demonstration](project_paper1_as_cet_demonstration.md) — canonical statement that Paper 1 is minimal empirical anchor for §13.8, not standalone "encoding gap discovery"
 - [Project: exp2 strict boundary](project_exp2_strict_boundary.md) — exp2 licenses only Implicit Causal Utilization, NOT Self-World Decomposition
 - [Project: Architecture causal ladder](project_architecture_causal_ladder.md) — each experiment's Pearl causal ceiling read from architecture dimensions (esp. dual-head 193rd action-input dim)
 - [Project: Level 3→4 meta-encoding-gap experiment](project_level4_metagap.md) — planned extension via ρ_t input channel (currently paused)
+- [Project: Three Levels of Learning — planned paper](project_three_levels_paper.md) — independent theoretical paper: reservoir computing + deep learning as levels of unified framework (Dynamics/Readout/Shaping); "learning is alignment, not encoding"

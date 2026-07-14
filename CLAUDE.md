@@ -28,6 +28,7 @@ Load these when the user asks about the paper's methodology or an experiment's p
 | [`docs/paper1_解读手册.md`](docs/paper1_解读手册.md) | **Authoritative** Chinese-language guide: operational definition of "self", 8-step evidence chain, per-experiment details, common misreadings, code navigation |
 | [`README.md`](README.md) | English overview + installation |
 | [`experiments_ext/metacog_level4/README.md`](experiments_ext/metacog_level4/README.md) | Extension experiment framework (currently paused) |
+| [`papers/three_levels/`](papers/three_levels/) | In-development independent paper: three-level framework unifying reservoir computing and deep learning (notes + outline stage) |
 | [`.claude-notes/`](.claude-notes/) | Frozen memory snapshot from previous machine — read on first session for design-decision history |
 
 ---
@@ -36,7 +37,8 @@ Load these when the user asks about the paper's methodology or an experiment's p
 
 1. **Never modify** files under [`experiments/`](experiments/) or [`core/`](core/). These are Paper 1's published code and must remain reproducible as-is.
 2. **New experiments go in `experiments_ext/<name>/`**. Model variants must be defined inline in the extension file, not by editing `core/model.py`.
-3. **Extensions belong to Paper 2+ or exploratory work**, not to Paper 1. Do not blur the line.
+3. **New independent papers go in `papers/<name>/`** (e.g., `papers/three_levels/`). Use for in-development theoretical or experimental work that will become its own arxiv preprint / publication. Distinct from `docs/` (interpretation of Paper 1) and `experiments_ext/` (experimental code).
+4. **Extensions belong to Paper 2+ or exploratory work**, not to Paper 1. Do not blur the line.
 
 ---
 
