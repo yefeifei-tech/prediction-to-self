@@ -19,6 +19,7 @@
 9. [关键数字速查表](#关键数字速查表)
 10. [常见误读与澄清](#常见误读与澄清)
 11. [代码结构导航](#代码结构导航)
+12. [用 CET 重读 Paper 1](#用-cet-重读-paper-1)
 
 ---
 
@@ -1143,19 +1144,163 @@ python -m experiments.exp6_measurement --lorenz --trace --delay
 
 ---
 
-## 附：CET 视角的一致性检查
+## 用 CET 重读 Paper 1
 
-Paper 1 是 CET 的 Paper 1，可以用 CET §13.8 的**条件集扩张逻辑**验证发育四条件是否满足：
+Paper 1 是 CET (Constraint Emergence Theory) 框架下 **§13.8 "Self 涌现的信息论解释：条件集扩张"** 的最小 empirical demonstration。本章用 CET 的精确术语重读 Paper 1 的核心实验，并修正前面章节中一些用词不严格的地方。
 
-对每一层 X → S_{t+1} 的跳跃：
-1. **信息价值**：`I(X; S_{t+1} | 已有条件集) > 0`
-2. **架构通路**：X 必须有真实的信息通路到达 h
+**前置说明**：CET 有配套论文 ORI (Observer-Relative Information)，$I_{ORI} = I_{CET} = \mathbb{E}_{S_t}[D_{KL}(P_{true}(S_{t+1} \mid S_t) \| P_M(S_{t+1} \mid S_t))]$——是同一个量，两种解读侧重（"观察者相对信息" vs "约束与模型的落差"）。本章以 CET 术语为主。
 
-| 条件 | 变量 | 架构通路 | 验证实验 |
-|------|-----|---------|---------|
-| 1 | Persistent state (h_multi) | GRU + EMA | exp1 scorecard |
-| 2 | Causal action loop | W_action(h) → obs[0] | exp2 recovery gap |
-| 3 | Proprioceptive trace (τ_t) | GRU 输入第 5 维 | exp3 vs exp4 recall gap |
-| 4 | Async time-ordering | 冻结/解冻 W_action 的 curriculum | exp5 sync vs async |
+### 12.1 §13.8 视角：Paper 1 的发育序列 = 条件集扩张
 
-**每一条都是"信息价值 + 架构通路"双条件同时满足**。少一个都不成立——这正是 Paper 1 的构造性论证。
+**CET §13.8 的核心命题**：Self 不是先验假设，而是**系统在持续降低 $I_{CET}$ 过程中，逐步将预测条件集扩张到包含自身状态**的结构性解。每一次扩张需要**两个条件同时满足**：
+
+1. **理论必要性**：$I(X;\, S_{t+1} \mid \text{已有条件集}) > 0$——变量 X 携带独立预测信息
+2. **架构必要性**：系统拥有获取 X 的**信息通路**
+
+**Paper 1 的四个 sufficient conditions 精确对应 Level 0→3 跨越所需的架构通路**：
+
+| Level 跨越 | 纳入变量 | 理论条件 | 架构通路（Paper 1 实现） | 验证实验 |
+|-----------|--------|---------|----------------------|---------|
+| 0 → 1 | $S_t$（世界状态）| $I(S_t; S_{t+1}) > 0$ | GRU + multi-scale EMA（**persistent state**）| exp1 scorecard |
+| 1 → 2 | $A_t$（行动）| $I(A_t; S_{t+1} \mid S_t) > 0$ | obs[0] += GAMMA·a（**causal action loop**）| exp2 spike + recovery |
+| 2 → 3 | $M_t$（内部状态）| $I(M_t; S_{t+1} \mid S_t, A_t) > 0$ | trace = EMA(\|a\|)（**proprioceptive feedback**）| exp3 vs exp4 recall gap |
+| — | 序 | 顺序不可交换 | 分阶段解冻（**async awakening**）| exp5 sync vs async |
+
+**Encoding gap 的 CET 精确定义**：
+
+**Level 2 → 3 跨越的第二条件（架构通路）缺失时的必然现象**——系统有 $I(M_t; S_{t+1} \mid S_t, A_t) > 0$ 的理论条件（$M_t$ 携带独立预测信息），但没有本体感受通路让 $M_t$ 进入预测计算。**优化压力存在但无法作用**，Level 停在 2。
+
+- **exp3**：GRU 输入 4d，缺少 $M_t$ 通路 → probe recall 12%（Level 卡在 2）
+- **exp4**：加一维 trace（打开通路）→ probe recall 60%+（Level 3 跨越）
+
+**这个理解重塑了 encoding gap 的意义**：它不是"新发现"（ML 常识层面 distributed representation），而是 **§13.8 第二条件缺失的必然预测**——Paper 1 的价值在于证明**这个理论预测在最小人工系统里可复现，且给出跨越的最小充分通路**。
+
+### 12.2 §9.8 视角：Paper 1 的关键指标 = 约束的两把尺
+
+**CET §9.8 的核心命题**：**约束 $\mathcal{C}$ 只有一套（客观），但可以从两个侧面被探测**：
+
+- **$D_{KL}^{obs}$（观测偏差）**：被动接收数据，探测约束的**相关侧面**——需要 Axiom 1+2+3
+- **$D_{KL}^{int}$（因果偏差）**：主动执行 $do(A)$，探测约束的**因果侧面**——需要 Axiom 1+2+3+**4**
+
+**没有 Axiom 4（行动），因果侧面从认识论上被永久封死**——这是"为什么因果推理需要 do 算子而不只是相关分析"的严格解释。
+
+**Paper 1 的关键指标对应两把尺**：
+
+| 指标 | CET 探测类型 | 探测约束的哪个侧面 |
+|------|:----------:|-----------------|
+| **pred gap**（93.7%）| $D_{KL}^{obs}$ | 相关侧面（知道 action 后预测改善多少）|
+| **spike test**（v0.3.2: 13.8x）| $D_{KL}^{int}$ | **因果侧面**（$do$(断开 action) 后系统响应）|
+| **recovery test**（74.8%）| 持续 $D_{KL}^{int}$ | 因果侧面（长期干预下的结构性适应）|
+| **Control 组对比** | 两种探测的交叉验证 | 区分相关 vs 因果 |
+| **exp6 counterfactual** | h 层 $D_{KL}^{int}$ | 因果侧面（在 pred_A 输入端做反事实）|
+
+**为什么 spike test 不能用相关性替代**：CET §6.3——相关性是对称的（$I(X; Y) = I(Y; X)$，无法区分方向）。**do 算子是切断所有指向被干预变量的箭头**，只有干预实验能触及约束的因果侧面。
+
+### 12.3 §6.4-6.5 视角：Pearl 局部因果 vs CET 全局因果
+
+**CET §6.4 的核心区分**：
+
+- **Pearl 因果**：在约束 $\mathcal{C}$ **内部**做因果推理（"这只鸡是否导致了这个蛋"）
+- **CET 因果**：问约束 $\mathcal{C}$ **本身**的问题（"什么维持了鸡→蛋→鸡这个闭环"）
+
+**Paper 1 的因果论证分布在两个层级**：
+
+| 论证 | 层级 | Pearl 还是 CET |
+|-----|------|:------------:|
+| "action 影响 obs[0]"（spike test）| 局部（$\mathcal{C}$ 内单步）| **Pearl**（$do$ 算子有效）|
+| "系统内化了因果结构"（recovery test）| 局部（$\mathcal{C}$ 内多步）| Pearl 扩展 |
+| **"self 表征是自我维持的"（self-maintenance）** | **全局（$\mathcal{C}$ 本身）** | **CET**（选择效应）|
+| **"发育顺序不可颠倒"（async awakening）** | **全局（$\mathcal{C}$ 本身）** | **CET**（identifying assumption）|
+
+**这修正了之前手册里 Pearl 分层的一个混淆**：我之前把 spike/recovery/self-maintenance 都归为 "Pearl Layer 2 干预"——从 Pearl 视角看是对的（都是 $do$ 操作），但从 CET 视角看 **self-maintenance 已经跨到全局层级**——它问的不是"这个 $do$ 会怎样"，而是"什么维持了闭环持续运转"。**这是 selection effect 的证据，不是普通干预实验**。
+
+### 12.4 A vs B ambiguity 的 CET 精确重写
+
+前面讨论 exp2 遗留的 A vs B ambiguity（**A**：表征分解；**B**：保留 self-correlated 变量），用 CET §9.8 的语言可以精确化：
+
+| 立场 | CET 语言 | h 结构 |
+|-----|--------|--------|
+| **A（表征分解）** | 系统**同时吸收** $D_{KL}^{obs}$ 和 $D_{KL}^{int}$——相关侧面 + 因果侧面都被压低 | h 结构上体现"self vs world"分解 |
+| **B（相关变量）** | 系统**只吸收** $D_{KL}^{obs}$——相关侧面被压低，因果侧面 unclear | h 只是有个和 self correlated 的可预测变量 |
+
+**exp2 Recovery test 的困境**（用 CET 语言精确）：
+
+- Recovery test 是 $D_{KL}^{int}$ 探测——但探测的是 **obs 层（世界端）**，不是 h 层
+- 所以 recovery 高只能说"**外部世界层面**表现出可分解性"
+- **不能直接说"h 内部结构是可分解的"**
+
+**要真正区分 A/B**，需要**在 h 层面做 $D_{KL}^{int}$ 探测**——干预 h 里"疑似 self 编码"的维度，看下游预测响应。
+
+- **exp3 的 probe test 是观测式**（从 detached h 读 label）→ 相关侧面
+- **exp6 的 counterfactual spike 是干预式但在 obs 端**（喂 pred_A 假 action）→ 部分 h 层 $D_{KL}^{int}$
+
+**真正区分 A/B 的 h 层 $D_{KL}^{int}$ 探测在 Paper 1 里没有**——这是未来实验的方向（**可能的 exp7+：直接在 h 上做 do 操作**）。
+
+### 12.5 exp2 严格边界的 CET 精确表述
+
+远端同步过来的 [.claude-notes/project_exp2_strict_boundary.md](../.claude-notes/project_exp2_strict_boundary.md) 已经指出 exp2 只 licenses "Implicit Causal Utilization"，不 licenses "Self-World Decomposition"。用 CET 精确化：
+
+**exp2 严格 claim**：
+- 系统的 $M$ 通过 **$D_{KL}^{obs}$ 吸收了因果通路上的相关性**
+- Recovery test 提供了 **obs 层 $D_{KL}^{int}$ 的证据**（世界端 $do$ 后系统能重构 signal）
+- **h 内部结构是否 A（可分解表征）还是 B（相关变量）**，recovery 无法唯一确定
+
+**Paper 1 的完整"Self"claim 需要五个证据合取**（这是完整的严格论证）：
+
+1. **$D_{KL}^{obs}$ 吸收**（exp2 pred gap）——相关侧面
+2. **$D_{KL}^{int}$ 吸收**（exp2 recovery + spike）——因果侧面（obs 层）
+3. **h 内部可读表征**（exp4 probe recall）——把 A 从 B 中分离
+4. **表征功能自我维持**（exp4b self-maintenance）——CET 全局层的选择效应
+5. **发育时序满足**（exp5 async）——identifying assumption
+
+**四个条件都是 §13.8 意义上"信息通路 + 优化压力"合取**——没有任何单一实验能完成。
+
+### 12.6 CET 视角下需要修正的前面章节表述
+
+带着 CET 视角回看，手册里几处需要收紧：
+
+**误读 15**（"encoding gap 不是核心新发现"）**结论正确，但理由需要收紧**：
+
+- 前面说：encoding gap 是 ML 常识（distributed representation）
+- **CET 更精确的说法**：encoding gap 是 **§13.8 第二条件（架构通路）缺失时的必然现象**——Paper 1 的贡献不是"发现 gap"，是"证明这个理论预测在最小人工系统里可复现，且量化了最小充分通路（1D trace）"
+
+**误读 14**（"Pearl 分层 = 证据链分层"）**方向正确，需要补充**：
+
+- 前面说：Pearl 分层是查询类型，证据链分层是 claim 类型
+- **CET 补充**：**证据链的"功能"层（Level 3, self-maintenance）已经跨越到 CET 的全局因果层级**，不再是纯 Pearl 意义上的 Layer 2 干预——它测的是"约束本身持续存在的条件"，是选择效应
+
+**"能用 ≠ 有表征"的诚实定位**（之前讨论）**用 CET 更精确**：
+
+- 前面说：ML 视角看是常识
+- **CET 精确表述**：**"能用" = $M$ 吸收了 $D_{KL}^{obs}$；"有表征" = $M$ 吸收了 $D_{KL}^{int}$ AND h 里有可读维度**——两者的分离是 §9.8 两把尺的理论预测，不是 empirical 惊讶
+
+### 12.7 CET 框架下 Paper 1 的最终定位
+
+**Paper 1 = §13.8 (条件集扩张) 的最小 empirical demonstration**，具体贡献：
+
+1. **证明 §13.8 的两条件（信息价值 + 架构通路）在人工系统中可复现**
+2. **量化 Level 1→2、Level 2→3 各自的最小充分架构通路**（causal loop、trace）
+3. **给出发育时序作为 identifying assumption 的证据**（exp5）
+4. **用 selection effect（exp4b）验证 §14.3 关于 Self 持续存在的非目的论解释**
+5. **用 §9.8 的两把尺同时验证约束的相关与因果两个侧面**（spike + recovery + counterfactual）
+
+**Paper 1 不涉及**：
+
+- CET §15 之后的 Value / Goal / Preference（未实现的 Level 4+）
+- CET §11 的约束创造类型（Paper 1 stays at Level 1-3）
+- CET §16 的 $\mathcal{V}$ 层级结构（未考虑多层 viable set）
+
+### 12.8 未来实验方向（CET 框架驱动）
+
+从 CET 视角，几个自然的 exp7+ 方向：
+
+1. **h 层 $D_{KL}^{int}$ 探测**：直接在 h 上做 do 操作以区分 A vs B
+2. **Level 3 → 4 的架构通路**：递归自我模型 $M(M)$ 需要什么额外通路
+3. **约束创造**（§11）：让 agent 不只是利用约束，还能创造持久的新约束（超越 Paper 1 的 Constraint Utilization）
+4. **多层 $\mathcal{V}$**（§16）：agent 认同哪一层 viable set 决定 Goal——这需要新的实验设计
+
+**exp7 (metacog_level4) 是这条路的第一步尝试**（虽然目前 paused）——目标就是探测 Level 3→4 的条件集扩张。
+
+---
+
+**总结**：**用 CET 重读 Paper 1，最重要的收获是把"encoding gap 是新发现"这个过强的表述**，替换为**"encoding gap 是 §13.8 第二条件缺失的可预测现象——Paper 1 的原创贡献是最小充分构造"**。这个转换让 Paper 1 从"一个关于 self 的实验报告"提升为"CET 理论框架的最小可验证测试"——更谦逊也更强。
