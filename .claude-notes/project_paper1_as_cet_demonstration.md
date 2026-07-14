@@ -75,6 +75,47 @@ Through Q&A with Evan, several imprecise framings emerged and were corrected:
 2. **Level 3→4 recursive self-model**: exp7 metacog_level4 is first attempt (paused)
 3. **Constraint creation (§11)**: agents that make persistent new constraints, not just utilize
 4. **Multi-layer V (§16)**: agents that identify with different viable-set layers
+5. **Test the stateless-fails prediction**: run same causal-loop setup on vanilla Transformer / MLP (no persistent state); CET predicts no self-representation emerges via this mechanism
+
+## Reservoir insight — the deeper implication of "GRU frozen"
+
+**Empirical fact (verified)**: GRU weights delta = 0 in exp1/exp2/exp6. Only pred_A/pred_B/W_action-like readouts train.
+
+**Deep implication**: AG > 0 is NOT trained structure — it's the fixed reservoir dynamics naturally producing structure that the readout discovers.
+
+**Complete causal chain**:
+```
+World constraint C  →  structured obs distribution  →  obs into GRU (blind reservoir)
+  →  h_multi encoding of obs history  →  pred_A/B readout discovers useful subspaces  →  AG > 0
+```
+
+**Attribution**:
+- **Reservoir doesn't "know" constraint** — it's a blind dynamical system
+- **Info in h is not learned** — it's propagated via "constraint → obs → fixed GRU"
+- **pred_A/B are discovery tools, not information sources** — 192→4 linear projections extracting what's already in h
+- **Learning happens at readout, not at dynamics** — concrete CSPP (CET §1.5) implementation
+
+**Three CET arguments this strengthens**:
+
+1. **Dual-head is measurement tool, not information source**: sharpens Paper 1 §6.1 claim. pred_A cannot create info; can only read from h. AG entirely attributable to reservoir + input structure.
+
+2. **Axiom 1 (persistent state) more fundamental than "learning capability"**: revised CET claim: "Persistent dynamical system (no learning needed) + trainable readout (necessary) = minimum architecture for Level 1→2 transition". Learning necessary but only at readout, not at dynamics.
+
+3. **Stateless architectures predicted to fail**: vanilla Transformer/MLP lack Axiom 1 (no persistent updating state); cannot form self-representation via this mechanism. Stateful architectures (RNN, Mamba, KV-cached Transformer, RWKV, xLSTM) satisfy the prerequisite; success depends on other CET conditions. Untested prediction — needs ablation experiment.
+
+**Implicit correction to CET §13.8's phrasing**:
+
+- **Original wording implies "system actively expands condition set"** — but Paper 1 shows system doesn't autonomously expand. Architecture is experimenter-provided; system's readout learns to utilize it.
+- **Stricter phrasing**: "When experimenter/environment provides architectural pathway AND informational condition holds, system's readout under optimization pressure discovers and utilizes the pathway, so representation emerges in the 'being-utilized' sense."
+- **This shifts the subject from "system autonomously expanding" to "environment provides, readout discovers"** — more accurately reflects what Paper 1 demonstrates.
+
+**Three-column impact table**:
+
+| Contribution | Content | Impact |
+|--------------|---------|--------|
+| Attribution precision | AG > 0 fully attributed to reservoir + input, not training | "dual-head is measurement" claim mechanized |
+| Axiom 1 positioning | Persistent state + trainable readout = minimum architecture | Learning at readout (selection), not dynamics (shaping) |
+| Subject clarification | Environment provides, readout discovers | Contracts "system autonomously expands" overclaim |
 
 ## Cross-references
 

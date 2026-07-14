@@ -553,6 +553,40 @@ Level 3（功能）：这个模型是内化的，不是外部监督假象
 
 **所以：差异藏在权重的"结构化程度"里，通过状态动力学暴露出来**。这是 Paper 1 方法论最微妙的一环——**用状态动力学揭示权重里已经编码好的结构**，权重和状态在因果论证里扮演不同角色。
 
+### Reservoir 视角：AG > 0 的物理归属
+
+**深化前面的"权重 vs 状态"区分**：既然 GRU 是 reservoir（权重固定），那**因果结构到底"存"在哪里**？
+
+**完整因果链**：
+
+```
+世界的约束 C（obs[0] += GAMMA·a 是实验者植入的通路）
+    ↓（约束产生结构化 obs 分布）
+obs 携带约束的痕迹
+    ↓（进入 GRU reservoir 作为输入）
+GRU 的固定动力学（blind lossy encoder）
+    ↓（把 obs 历史压缩到 h_multi 的 192 维）
+h_multi 里含有约束痕迹的分布式表征
+    ↓（pred 作为 readout 投影出对预测有用的子空间）
+预测好（Causal 组）/ 预测不好（Control 组）
+```
+
+**关键归属声明**：
+- **reservoir 不"知道"约束**——它是 blind dynamical system，只是处理输入
+- **h 里的信息不是学出来的**——是"约束 → obs → 固定 GRU"这条**物理链条**传播过来的
+- **pred 是发现工具，不是信息源**——从 h 已有的 192 维中投影出有用子空间
+- **训练发生在 readout 层，不发生在 dynamics 层**——CET §1.5 CSPP 的具体实现
+
+**这个视角强化了两个论点**：
+
+1. **exp2 的证据完全归属于 reservoir + input + readout 三者的相互作用**——**GRU 不需要"学会"因果结构**，只要动力系统跑着，输入携带的信息就会自然进入 h。**pred 的训练是"发现哪部分 h 对预测有用"，不是"塑造 h 里的因果结构"**。
+
+2. **Axiom 1（持续状态）比"学习能力"更根本**：**没有 GRU 的 recurrent 结构，即使 pred 学到再好也没用**（因为 h 里没有输入历史）。反过来，**只要 GRU 是 stateful 的（跑着就行），readout 就能发现因果结构**。
+
+**推论（未验证的 CET 预测）**：**stateless 架构**（vanilla Transformer, MLP）**无法通过此机制形成 self-representation**——不是因为它们"不够智能"，是因为它们**不满足 Axiom 1**（无持续更新的内部状态）。**Stateful 架构**（RNN, Mamba, KV-cached Transformer）满足前提。
+
+详见 [§13 CET 重读的 §12.9 Reservoir 视角强化](#129-reservoir-视角对-cet-的强化)。
+
 ### Spike ~1.0x 的诊断（不是"窗口太短"）
 
 Current `experiments/exp2_causal.py` 跑出 ch0 spike ≈ 1.0x（我们已经 empirical 验证），不是因为**窗口太短**，恰恰因为**窗口太长 + 状态重置**：
@@ -1429,6 +1463,97 @@ Paper 1 是 CET (Constraint Emergence Theory) 框架下 **§13.8 "Self 涌现的
 
 **exp7 (metacog_level4) 是这条路的第一步尝试**（虽然目前 paused）——目标就是探测 Level 3→4 的条件集扩张。
 
+### 12.9 Reservoir 视角对 CET 的强化
+
+**这是我们在讨论中挖出的一个深层洞察**——把 Paper 1 的 reservoir computing 事实推到 CET 的哲学层面。
+
+#### 关键 empirical 事实（重复但要突出）
+
+Paper 1 大部分实验（exp1, exp2, exp6）里 **GRU 权重从头到尾没被训练**（empirical 验证过 delta = 0）。只有 **pred_A / pred_B / W_action** 等 readout 类模块被训练。
+
+**这个事实的深层意义**：**AG > 0（Level 1→2 的 empirical 标志）不是训练出来的结构，是 reservoir 的固定动力学产生的自然结构被 readout 发现了**。
+
+#### 物理归属的完整因果链
+
+```
+世界的约束 C（action 影响 ch0）
+    ↓（约束产生结构化的 obs 分布）
+obs 携带约束的痕迹
+    ↓（进入 GRU reservoir 作为输入）
+GRU 的固定动力学（作为 blind lossy encoder）
+    ↓（把 obs 历史压缩到 h_multi 的 192 维）
+h_multi 里含有约束痕迹的高维表征
+    ↓（pred_A 作为 readout 投影出有用子空间）
+AG > 0
+```
+
+**关键归属**：
+- **reservoir 不"知道"约束** —— 它是 blind dynamical system
+- **h 里的信息不是学出来的** —— 是"约束 → obs → 固定 GRU"这条物理链条把痕迹传播过来的
+- **pred_A/B 是发现工具，不是信息源** —— 它们从 h 已有的 192 维中投影出有用子空间
+
+**AG > 0 完全归属于 reservoir + 输入结构，不归属于任何训练**。
+
+#### Reservoir 视角强化的三个 CET 论点
+
+**强化 1：dual-head 是测量工具而非信息源**
+
+Paper 1 §6.1 说过这句话，但 reservoir 视角让它更锋利：pred_A 和 pred_B **本质上不可能创造信息**——它们是 192→4 的线性投影，从 h 里读出已经存在的东西。**AG > 0 完全归属于 h 的信息内容**，而 h 的信息内容完全归属于 reservoir 的输入-驱动动力学。
+
+Phase 1 vs Phase 2b 的 spike 分离（0.95× vs 17.32×）在这个视角下更清晰：**pred_A 有 action 输入不等于有 causal 依赖**——机械补偿是 readout 层的平凡结果，真正的 causal 依赖需要 h 里有可用的结构化 self 信号（这个信号是 W_action + reservoir dynamics 联合产生的）。
+
+**强化 2：Axiom 1（persistent state）比"学习能力"更根本**
+
+**修正后的 CET claim**：
+
+> **"持续运行的动力系统（Axiom 1，不需要学习）+ 可训练的 readout（必要）"是 Level 1→2 涌现的最小架构。学习是必要的，但只需要发生在 readout 层面，不需要发生在动力学层面。**
+
+**这不是"完全不需要学习"**——readout 学习是必要的。**是"学习不需要发生在动力学层面"**。
+
+**这个修正比原表述更强**：它说清楚了"学习"在 CET 里的**位置**——学习是**发现接口**（selection/projection），不是**塑造动力学**。这与 CET §1.5 的 CSPP（约束筛选原则）完全一致——**pred 训练就是在 h 的 192 维中做 CSPP 投影**。
+
+**强化 3：预测 stateless 架构会失败**
+
+**注意限定**：这是 CET 的**预测/假设**，不是 Paper 1 已经证明的东西。
+
+严格表述：
+
+> **没有持续更新的内部状态**（Axiom 1 不满足）的架构，无法通过 reservoir + readout 机制形成 self-representation。
+> - **Stateless 架构**（vanilla Transformer, MLP）会失败——每次 forward pass 独立，无状态积累
+> - **Stateful 架构**（RNN, Mamba, KV-cached Transformer, RWKV, xLSTM）满足前提，是否涌现取决于其他 CET 条件（因果闭环、readout 可训练性等）
+
+**主体是 Axiom 1（持续状态），不是具体某种模型架构**。测试这个 claim 需要专门的 ablation 实验（未来方向）。
+
+#### 对 §13.8 表述的隐含修正
+
+**§13.8 原表述**："系统在持续降低 $I_{CET}$ 过程中，逐步将条件集扩张到包含自身状态"
+
+这个表述**隐含了"系统主动扩张条件集"**——但 Paper 1 的 reservoir setup 里，系统**不主动扩张**：
+- Action → obs 通路是**实验者预设的**
+- GRU 输入维度是**实验者预设的**
+- 扩张 = **实验者提供架构** + **系统的 readout 学会利用它**
+
+**更严格的 §13.8 表述**：
+
+> **当实验者/环境提供架构通路且信息条件满足时，系统的 readout 在优化压力下发现并利用该通路，从而"表征"在被利用的意义上涌现。**
+
+**这与 reservoir 视角完全一致**——所有的 agency 发生在 readout 层，reservoir 提供潜在的可读表征。**"系统自主扩张条件集"是过强的表述**，应该收缩为"系统的 readout 学会利用实验者提供的通路"。
+
+#### Reservoir 视角对 CET 的三个具体贡献
+
+| 贡献 | 内容 | 影响 |
+|-----|------|------|
+| **1. Attribution 精确化** | AG > 0 完全归属 reservoir + input，不归属训练 | dual-head 是测量工具的表述从口号变成机制说明 |
+| **2. Axiom 1 定位精确化** | 持续状态 + 可训练 readout = 最小架构 | 学习在 readout（selection），不在 dynamics（shaping） |
+| **3. 主体澄清** | Self 涌现 = 环境提供通路 + readout 学会利用 | 收缩"系统主动扩张"这个过强表述 |
+
+**这个洞察填补了 CET §13.8 里一个隐藏的模糊**——把"条件集扩张"的**主体**明确到"实验者/环境提供通路，系统的 readout 发现并利用"。
+
 ---
 
-**总结**：**用 CET 重读 Paper 1，最重要的收获是把"encoding gap 是新发现"这个过强的表述**，替换为**"encoding gap 是 §13.8 第二条件缺失的可预测现象——Paper 1 的原创贡献是最小充分构造"**。这个转换让 Paper 1 从"一个关于 self 的实验报告"提升为"CET 理论框架的最小可验证测试"——更谦逊也更强。
+**总结**：**用 CET 重读 Paper 1，最重要的两个收获**：
+
+1. **encoding gap 不是新发现**（§13.8 第二条件缺失的可预测现象）——Paper 1 的原创贡献是**最小充分构造**（1D trace）
+2. **AG > 0 归属于 reservoir + input，不归属于训练**——这**修正了 §13.8 里"系统主动扩张"的表述**，明确了"学习在 readout 层面"
+
+**这两个转换让 Paper 1 从"一个关于 self 的实验报告"提升为"CET 理论框架的最小可验证测试"**——**同时把 CET 从"系统进化论"式表述**（系统主动扩张）**收紧为"读出发现论"式表述**（环境提供，readout 发现）。**更谦逊，也更精确**。
