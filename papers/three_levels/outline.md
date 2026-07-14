@@ -16,9 +16,9 @@
 
 （等 outline 稳定后决定）
 
-## Abstract（draft, ~150 words）
+## Abstract（draft v2, ~180 words, incorporating critique revisions）
 
-For twenty years, reservoir computing and deep learning have been treated as competing paradigms: one keeps recurrent dynamics fixed and trains only a readout; the other trains everything end-to-end. We propose that this is a false dichotomy. Both are cases of a unified three-level framework: **Dynamics** (rich state trajectories), **Readout** (task-relevant recovery from those states), and **Dynamics Shaping** (reorganizing dynamics for compact, composable representation). Reservoir computing uses only Levels 1-2; standard deep learning adds Level 3. Neither is fundamentally right — they occupy different points on a spectrum. Using a minimal Level 2 case study (a 192-dim GRU with frozen recurrent weights that develops self-representation via only readout training), we argue that "learning" is not knowledge creation but ontological alignment of internal dynamics with world structure. Level 3 shaping is refinement of alignment, not creation of knowledge. This reframing yields concrete predictions about which architectures can develop self-representation and where reservoir approaches suffice.
+For twenty years, reservoir computing and deep learning have been treated as competing paradigms: one keeps recurrent dynamics fixed and trains only a readout; the other trains everything end-to-end. We propose that this is a false dichotomy. Both are cases of a unified three-level framework: **Dynamics** (rich state trajectories), **Readout** (task-relevant recovery from those states), and **Dynamics Shaping** (reorganizing dynamics for compact, composable representation). Reservoir computing uses only Levels 1-2; standard deep learning adds Level 3. Neither is fundamentally right — they occupy different points on a spectrum. Using a minimal Level 2 case study (a 192-dim GRU with frozen recurrent weights that develops **implicit causal utilization** via only readout training), we argue that learning can be viewed as **progressive alignment between internal dynamics and world dynamics** — an ontological alignment complementing the traditional encoding view. Level 3 shaping refines alignment (making representations more compact and composable), rather than being the sole source of representational meaning. The framework yields three testable predictions about which architectures can support such alignment (specifically requiring persistent internal state) and how alignment scales with task complexity.
 
 ## Structure
 
@@ -62,16 +62,23 @@ For twenty years, reservoir computing and deep learning have been treated as com
 - L3 requires L1+L2 (shape dynamics to be readable)
 - The choice of stopping level is architectural
 
-### Section 3. A Minimal Level 2 Case Study: Self-Representation in a Frozen GRU
+### Section 3. A Minimal Level 2 Case Study: Implicit Causal Utilization in a Frozen GRU
+
+（**修正**：不能说 L2 alone develops full self-representation——那和 Paper 1 exp2 严格边界打架）
 
 - Reference to Paper 1 ("From Prediction to Self", arXiv:2606.05605)
 - Setup: 192-dim GRU with random-frozen weights + causal action loop + trainable prediction heads
-- Key finding: self-representation emerges **without training the recurrent dynamics**
+- **Key finding**: **implicit causal utilization** emerges without training the recurrent dynamics
+  - System's readout learns to compensate for own-action effects via the reservoir's h
+  - Behavioral evidence (spike test, recovery) confirms causal dependence
+  - **This is what L2 alone accomplishes**
+- **What L2 alone does NOT accomplish**:
+  - **Readable self-representation** requires an additional pathway (Paper 1 exp4 adds 1D proprioceptive trace)
+  - The encoding gap between L2's implicit utilization and L2-plus-pathway's readable representation is Paper 1's central conceptual finding
 - Attribution:
   - Reservoir dynamics propagate constraint information from world → obs → h
-  - Readout learns to select h subspaces that carry self-relevant info
-  - Adding a 1D proprioceptive channel (trace) opens the pathway for readable self-representation
-- **This is L2 in action** — no dynamics shaping, yet Level 3 self-representation (in CET terms) emerges
+  - Readout learns to select h subspaces useful for prediction
+  - Additional 1D pathway (trace) enables readable readout of "recently acted" state
 
 ### Section 4. Standard Deep Learning as Level 3
 
@@ -85,12 +92,22 @@ For twenty years, reservoir computing and deep learning have been treated as com
 
 ### Section 5. Learning as Ontological Alignment
 
-**§5.1 The philosophical reframe**
+**§5.1 The philosophical reframe**（tighten wording per critique）
 
-- Traditional view: model **encodes** world (world → data → model → internal representation)
-- Three-level view: model **is** a dynamical system that can **align** with world's dynamical structure
-- **World is dynamics; RNN is dynamics; alignment is possible**
-- Symbol AI (GOFAI) failed because discrete symbols cannot align with continuous world
+- Traditional view: learning creates task-optimized representations via gradient descent
+- Three-level reframe: **learning can be viewed as progressive alignment between internal dynamics and world dynamics**
+  - Not denying creation happens at parameter level
+  - Reframing what makes the created structures meaningful: alignment with world structure
+- **Both world and RNN belong to the same mathematical class: dynamical systems**
+  - (State-and-transition, not physical resonance metaphor)
+- **One possible interpretation of GOFAI's limits**: symbolic systems lack an intrinsic continuous dynamical substrate; alignment with continuously-varying world dynamics becomes structurally difficult (multiple factors likely contribute — combinatorial explosion, symbol grounding, uncertainty handling — this is one interpretation among several)
+
+**§5.1a L0 Constraint as the deeper substrate**（新增 subsection）
+
+- Underlying L1-L3 is a deeper substrate: **the constraint structure of the world** — what learning aligns *to*
+- Developed in companion theoretical work on Constraint Emergence Theory [Ye 2026+ CET]
+- For this paper, we take world dynamics as given and focus on how internal dynamics can align with them at L1-L3
+- L0 is not itself a learning layer; it's the target of alignment. L1-L3 are where learning operates
 
 **§5.2 The operational consequence**
 
@@ -106,24 +123,32 @@ For twenty years, reservoir computing and deep learning have been treated as com
 
 ### Section 6. Predictions and Testable Hypotheses
 
-**§6.1 Prediction 1: Stateless architectures cannot form self-representation via this mechanism**
+**§6.1 Prediction 1: Architectures without persistent internal state show limitations**（tighten wording per critique）
 
-- Rationale: no Level 1 (no persistent state) = no dynamical alignment possible
-- Failure predicted: vanilla Transformer, MLP, feedforward networks
-- Success possible: RNN, Mamba, KV-cached Transformer, RWKV, xLSTM
-- Experimental design: replicate Paper 1's setup with stateless architecture; check for encoding gap analog
+- Rationale: no Level 1 (persistent state) = no dynamical alignment possible
+- Failure predicted on tasks requiring sustained temporal integration: **pure feed-forward architectures without persistent internal state** (careful: don't blanket-attack "Transformer" — KV cache, attention over context, and stateful Transformer variants are partial states)
+- Success possible: RNN, Mamba, KV-cached Transformer, RWKV, xLSTM, Neural ODEs
+- Experimental design: replicate Paper 1's setup with truly stateless feed-forward architecture; check for encoding gap analog
 
-**§6.2 Prediction 2: L2 vs L3 self-representation differs in structure**
+**§6.2 Prediction 2: L2 vs L3 representation differs in structure**
 
-- L2 (reservoir): self-representation is a flat readable direction in state space
-- L3 (shaped): self-representation should be hierarchical, compositional, transferable
-- Experimental design: same probe methodology on L2 vs L3 versions, measure structure properties (not just recall)
+- L2 (reservoir): representation flat readable direction; task-specific, less transferable
+- L3 (shaped): representation should be hierarchical, compositional, transferable
+- **Concrete measurable metrics** (must specify or prediction is unfalsifiable):
+  - **Linear separability**: class separation in h space
+  - **CKA (Centered Kernel Alignment)** / **SVCCA**: cross-layer/cross-model similarity
+  - **Mutual Information gap**: hierarchical representations should show ancestor-concept containing descendant-concept information
+  - **Compositionality tests** (systematic generalization benchmarks)
+  - **Transfer learning performance**: hierarchical L3 should transfer better
+- Experimental design: same probe methodology on L2 vs L3 versions; report structure metrics, not just recall
 
-**§6.3 Prediction 3: Shaping necessity scales with task complexity**
+**§6.3 Prediction 3: Shaping necessity scales with task complexity (a form of scaling law)**
 
-- Simple dynamics prediction (sinusoid, Lorenz) → L2 sufficient
-- Hierarchical concepts (language, vision) → L3 required
-- Provides principled criterion for when to add shaping
+- Simple dynamics prediction (sinusoid, Lorenz) → L2 sufficient (frozen reservoir OK)
+- Hierarchical concepts (language, vision) → L3 required (must shape dynamics)
+- **This is effectively a scaling law**: task complexity ↑ → L3 marginal benefit ↑
+- Experimental design: sweep task complexity axis (simple → hierarchical), plot L2 vs L3 performance gap
+- **Falsifiable prediction**: gap should widen with complexity; if gap stays constant, framework needs revision
 
 ### Section 7. Discussion
 

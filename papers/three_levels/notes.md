@@ -2,7 +2,26 @@
 
 **状态**：pre-outline notes（still gathering insights，not yet paper draft）
 
-**核心 claim**：机器学习不是"知识创造"，是"内部动力学与世界结构的对齐重塑"。Reservoir Computing 和 Deep Learning 不是对立范式，是同一个三层框架的不同层级选择。
+**核心 claim**（修正后）：**Learning can be viewed as progressive alignment between internal dynamics and world dynamics**（**不用"不是创造"这种绝对语气**——审稿人策略上更强）。Reservoir Computing 和 Deep Learning 不是对立范式，是同一个三层框架的不同层级选择。
+
+## 从 critique 得到的四条修正（2026-07 sedimenting 后确定）
+
+1. **"不是创造 → 更是对齐"**：从否定语气改为 reframe 语气
+   - ❌ "学习不是知识的创造"
+   - ✅ "Learning can be viewed as progressive alignment between internal dynamics and environmental dynamics"
+
+2. **"self-representation → implicit causal utilization"**（Paper 1 exp2 严格边界）：
+   - ❌ "L2 alone develops self-representation"（和我们讨论的 exp2 严格边界打架）
+   - ✅ "L2 alone supports implicit causal utilization; readable self-representation requires additional pathway (Paper 1 exp4's trace)"
+
+3. **"Transformer 失败 → 缺持续状态的架构受限"**：Transformer 不是干净 stateless（KV cache、attention 都算 state）
+   - ❌ "vanilla Transformer fails"
+   - ✅ "pure feed-forward architectures without persistent internal state show limitations on tasks requiring sustained temporal integration"
+
+4. **加 L0 Constraint 作为 substrate**（Framing A：不作为学习层，作为哲学 grounding）：
+   - L0 Constraint = 世界的结构（alignment 的对象）
+   - L1-L3 = learning 发生的层级
+   - Paper 主 focus 在 L1-L3；L0 作为 substrate 在 introduction 或 Section 5 提一次；引用 CET 作为深层理论依据，不吸收 CET 进正文
 
 ---
 
@@ -61,6 +80,12 @@
 - L2（Paper 1 reservoir）: self 表征是"h 里的一个 readable 方向"——**扁平的**
 - L3（训 GRU 版本）: self 表征可能是"层级化的、可组合的、跨任务迁移的"
 - **实验设计**：用同一套 probe 测量 L2 和 L3 版本，看**表征的结构性质**（不只是 recall 数字）
+- **可测的具体指标**（必须写进 paper，否则太模糊）：
+  - **Linear separability**（不同类别在 h 空间线性可分程度）
+  - **CKA (Centered Kernel Alignment)** / **SVCCA**（跨模型或跨层的表征相似度）
+  - **Mutual Information gap**（层级化表征：祖先 concept 应含子 concept 信息）
+  - **Compositionality tests**（如 systematic generalization benchmarks）
+  - **Transfer learning performance**（层级化表征应更 transferable）
 
 **Prediction 3（shaping 的必要性 = 任务复杂度）**：**任务越复杂，越需要 L3 shaping**
 - 简单动力学预测（正弦、Lorenz）→ L2 reservoir 足够
