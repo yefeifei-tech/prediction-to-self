@@ -15,11 +15,12 @@
 5. [八步证据链（完整版）](#八步证据链完整版)
 6. [训练模式对照：哪些权重在动？](#训练模式对照哪些权重在动)
 7. [分实验详解](#分实验详解)
-8. [五指标 vs 八指标：为什么不能压缩](#五指标-vs-八指标为什么不能压缩)
-9. [关键数字速查表](#关键数字速查表)
-10. [常见误读与澄清](#常见误读与澄清)
-11. [代码结构导航](#代码结构导航)
-12. [用 CET 重读 Paper 1](#用-cet-重读-paper-1)
+8. [证据三元组速查表](#证据三元组速查表)
+9. [五指标 vs 八指标：为什么不能压缩](#五指标-vs-八指标为什么不能压缩)
+10. [关键数字速查表](#关键数字速查表)
+11. [常见误读与澄清](#常见误读与澄清)
+12. [代码结构导航](#代码结构导航)
+13. [用 CET 重读 Paper 1](#用-cet-重读-paper-1)
 
 ---
 
@@ -859,6 +860,133 @@ trace 定义：`τ_t = 0.95 · τ_{t-1} + 0.05 · |a_t|`
 - Lorenz + delay 测**鲁棒性**：agency 不是只在特定信号或即时反馈下才成立
 
 **在证据链中的位置**：**步骤 1**（AG 观察）+ **步骤 5**（Layer 3 反事实）+ **步骤 8**（综合测量）
+
+---
+
+## 证据三元组速查表
+
+**这一章是紧凑参考**，把 §7 分实验详解里散布的信息压缩成三元组：**claim → 证据 → 排除的替代解释 + 未能证明什么**。特别是最后一列（未能证明）是保持严格边界的关键——**Paper 1 每个实验都有明确的证明力上限**。
+
+### 总表（at-a-glance）
+
+| # | 实验 | 核心 claim | 主要证据 | 关键排除 | 未证明 |
+|---|------|-----------|---------|---------|--------|
+| 1 | **exp1** | h 能形成稳定 attractor（架构性质） | 7 项 scorecard 6/7 pass；5 项 attractor 测试**未训也全过** | h 是白噪声 / 会发散 / 单一时间尺度 / 无响应 | attractor **对下游任务有用**（需训练验证）；**承载 self 内容**（这是 exp2+ 的事） |
+| 2 | **exp2** | Implicit Causal Utilization 涌现 | 三层证据：spike 通道特异 + recovery 74.8% vs 57.2% + self-maint 94.9% vs 53.9% | 系统没学 / 影响所有通道 / 任何统计匹配信号都行 / self 是 aux 塞的 | **Self-World Decomposition**（只到 Utilization）；A vs B ambiguity 在 h 层开放 |
+| 3 | **exp3** | 能用 ≠ 能读出（Encoding Gap） | trailing recall **12%**，即使 aux 使劲推 | 训练不够 / probe 太弱 / action shortcut | "更长训练 / 非线性 probe 或许能读到"（未测） |
+| 4 | **exp4** | 加一维 trace 就跨过 gap | 与 exp3 同 setup，只差一维 → **12% → 60%+** | trace 是 label shortcut / 训练时长差异 / aux 效果更强 | **"1D trace 是最小充分"是 empirical，非理论最小**；**任意 vs 特定信号 ablation 未做** |
+| 5 | **exp4b** | 表征只在因果有用时自维持 | 撤 aux 后 Causal **94.9%** vs Control **53.9%** | 训练过的表征都自维持 / 时长差异 / aux 是唯一支撑 | 表征"**有意识**"（纯选择效应）；**长期稳定性**（只测 5000 步）；signal-agnostic（未测） |
+| 6 | **exp5** | 训练时序是 identifying assumption | 三种同步 LR 都失败；async 双通过 | LR 问题 / 架构问题 / 训练不足 | **async 是唯一可行时序**（未测其他序列）；**必须严格 3-phase**（未测其他分段） |
+| 7 | **exp6** | 定量 agency + Pearl Layer 3 反事实 | AG > 0 + counterfactual spike **17.32×** + Lorenz 鲁棒 + delay 鲁棒 | pred_A 只把 action 当装饰 / 只能瞬时反馈 / 只在正弦下 | **AG 是 predictive advantage，非严格 causal advantage**（Paper 1 §7 承认此 limitation） |
+
+### 详细三元组
+
+**exp1 — Perception**
+- **Claim**：h 能形成低维稳定 attractor（**架构性质**，不依赖学习）
+- **Evidence**：Dim < 30% (2.6%) / Recovery 97% / Novelty 1.47 / Spectral separation / Power-law → **完全不训练也全过**；第 4 项残差白噪声需 pred 训练
+- **排除**：h 是白噪声 / 会发散 / 只有单一时间尺度 / 对输入无响应
+- **未证明**：attractor 对下游任务有用；承载 self 内容
+
+**exp2 — Causal Budding**
+- **Claim（严格版）**：Implicit Causal Utilization——不是 Self-World Decomposition
+- **Evidence（三层）**：
+  - **Layer 1 存在性**：spike test（两组都通过 = 通道特异性）
+  - **Layer 2 性质**：recovery test（Causal 74.8% > Control 57.2% = 结构化 vs 统计）
+  - **Layer 3 功能**：self-maintenance（Causal 94.9% vs Control 53.9% = 内化 vs 假象）
+- **排除**：什么都没学 / 影响所有通道 / 任何统计匹配信号都行 / self 是外部塞的
+- **未证明（严格边界）**：
+  - **Self-World Decomposition**（只到 Utilization——用了因果，不代表分解了 self/world）
+  - **A（表征分解）vs B（保留 self-correlated 变量）**在 h 层的区分（recovery 只测 obs 层）
+  - Spike 不区分 Causal vs Control（两组都通过——只测通道特异性）
+
+**exp3 — Encoding Gap**
+- **Claim**：能用 ≠ 有可读表征（Paper 1 核心概念发现）
+- **Evidence**：即使 aux head 主动施压 h 编码"我在动"（三分类 + 梯度回流），probe 读 detached h 依然只有 **12%**（≈ chance）
+- **排除**：
+  - "训练不够" ← aux 使劲推 80K 步还是 12%
+  - "probe 太弱" ← pred 也是线性 Linear(192,4)，能预测好；**同类型 readout 里 pred 成功 probe 失败** = **不是 readout 能力问题**
+  - "action shortcut" ← **exp3 里 action 是纯随机 uniform(-2, 2)**，不是 W_action(h)，h 不能天然含 action
+- **未证明**：更复杂 probe / 更长训练能否读出（Paper 1 只测线性 probe + 80K 步）
+
+**exp4 — Proprioceptive Breakthrough**
+- **Claim**：加一维 trace 就能跨过 encoding gap
+- **Evidence**：与 exp3 **完全同 setup**（random action、同 aux、同 probe），唯一差别 GRU 输入维度 4d → 5d（多一维 τ = EMA(|a|)）→ trailing recall **12% → 60%+**
+- **排除**：
+  - "trace 是 label shortcut" ← trace 是 |action| 的 EMA，不携带 is_trailing 标签
+  - "训练时长差异" ← 完全相同的训练步数
+  - "aux head 效果更强" ← aux head 完全相同
+- **未证明（Paper 1 里可补的洞）**：
+  - **"1D trace 是最小充分"是 empirical 观察**，理论最小可能更小
+  - **"trace-specific vs 任意信号"没做严格 ablation**（应该测"加一维随机噪声"或"加一维不相关信号"作为对照）——严格版验证 trace 的**信息内容**才是必要的，而不只是"多一维输入"
+
+**exp4b — Self-Maintenance**
+- **Claim**：h 里的 self 表征**只在因果有用时**被 GRU 动力学自我维持
+- **Evidence**：训完 Phase 2（Causal 95.3%, Control 91.9%——两组都被 aux 训到高精度），撤 aux + 冻结参数 5000 步：Causal **94.9%**（几乎不变），Control **53.9%**（接近 chance）
+- **排除**：
+  - "训练过的表征都自维持" ← Control 塌到 53.9% 排除
+  - "训练时长/参数量差异" ← 两组完全相同
+  - "aux 是唯一支撑" ← 两组撤 aux 都失去支撑，只有 Control 塌
+- **未证明**：
+  - 表征"**有意识**"（纯粹是选择效应）
+  - **长期稳定性**（只测 5000 步）
+  - **signal-agnostic**（只在特定 3 通道 setup 下测过）
+
+**exp5 — Asynchronous Awakening**
+- **Claim**：训练时序（perception 稳定后再解冻 action）是 **identifying assumption**（必要条件，不是超参）
+- **Evidence**：
+  - **Async**（3-phase 分阶段）：spike 5.58×, trailing 66.3% ✓ 双通过
+  - **Sync FAST**（LR 1e-3）：4.76×, 60.5%（通过但不如）
+  - **Sync MEDIUM**（LR 5e-4）：3.98×, **21.5%**（trailing 失败）
+  - **Sync SLOW**（LR 1e-4）：2.52×, 40.3%（marginal）
+- **排除**：LR 问题 / 架构问题 / 训练不足——三种 LR 都不如 async，架构完全相同
+- **未证明**：async 是唯一可行时序 / 必须严格 3-phase / 其他信号或架构下也成立
+
+**exp6 — Agency Gain Measurement**
+- **Claim**：定量测量 agency + 用 counterfactual 达到 Pearl Layer 3
+- **Evidence**：
+  - AG = Err_B − Err_A > 0（sinusoidal pred gap 80.7%, Lorenz 99.5%）
+  - **Counterfactual spike**（喂 pred_A 假 action）：spike_zero = 17.32×
+  - **Phase 1 vs Phase 2b spike 分离**：0.95× vs 17.32× —— pred gap 大不等于 causal 依赖（Phase 1 gap 98.8% 但 spike ≈ 1，是机械补偿）
+  - 跨信号（Lorenz）+ 延迟（2 步）鲁棒
+- **排除**：pred_A 只把 action 当装饰 / 只能瞬时反馈 / 只在正弦下
+- **未证明**：AG 是 predictive advantage，**不是严格 causal advantage**（Paper 1 §7 limitation 明确承认——严格 causal 需要完整 Pearl do 算子框架）
+
+### Claim 强度分级
+
+Paper 1 每个实验的证明力有明确上限，分级如下：
+
+| 实验 | Claim 强度 | 严格边界 |
+|-----|:--------:|---------|
+| exp1 | 中 | attractor **存在**，但不涉及 self |
+| exp2 | 中偏弱 | Implicit Causal Utilization，**不是 SW-Decomposition** |
+| exp3 | **强**（negative claim） | 能用 ≠ 能读，可靠地**证否**了"能用即能读" |
+| exp4 | 强 | 最小充分构造，但**缺"1D 是否最小"的 ablation** |
+| exp4b | 强 | 选择效应清晰，但**只测短期**（5000 步） |
+| exp5 | 强 | 时序必要性明确，但**未测其他可能时序** |
+| exp6 | 强 | Pearl Layer 3 + 定量 + 跨信号 + 延迟鲁棒 |
+
+**规律**：**negative claims（如 exp3 的"读不出"）比 positive claims 更强**——因为证否只需要一个反例的**不存在**，而证实需要**排除所有替代解释**。
+
+### 关键洞察：Self-World Decomposition 需要五个实验合力
+
+**Paper 1 没有任何单一实验能独立证明完整的 Self-World Decomposition**。完整证明需要**五个实验合取**：
+
+1. **exp2 pred gap** → $D_{KL}^{obs}$ 吸收（相关侧面）
+2. **exp2 recovery + spike** → $D_{KL}^{int}$ 吸收（因果侧面，obs 层）
+3. **exp4 probe recall** → h 层可读表征（**把 A 从 B 中分离**——这是关键的第 3 条）
+4. **exp4b self-maintenance** → 表征功能内化（全局选择效应）
+5. **exp5 async** → 发育时序满足（identifying assumption）
+
+**任何一个缺失，Self-World Decomposition 都不成立**。这正是 Paper 1 采用"发育序列"叙事的原因——**结论是合取的，实验必须联合起来读**。
+
+---
+
+**这份速查表的两个用法**：
+
+1. **快速回忆**：读 §7 详解后忘了某个实验证明什么，来 §8 看一行
+2. **保持严格**：写论文 / 回复审稿人时，看"未能证明"一列——**不要越过 Paper 1 实验的严格边界 oversell**
+
+**审稿人问"你的实验证明了 X 吗"，看"claim"列决定是不是；看"未证明"列决定要不要收缩**。
 
 ---
 
