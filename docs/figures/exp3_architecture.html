@@ -1,0 +1,370 @@
+<title>实验 3 架构与时序 · 编码鸿沟</title>
+<style>
+  :root{
+    --paper:#eef1f5; --panel:#ffffff; --panel-2:#f6f8fb;
+    --ink:#1a2331; --ink-soft:#5a6636; --ink-soft:#586279; --line:#d7dde6;
+    --accent:#2b7ea6;      /* pred / data */
+    --grad:#c8377a;        /* gradient / induction */
+    --measure:#1c8a78;     /* probe / measurement */
+    --active:#c9832a;      /* action-on phase */
+    --trailing:#d8434b;    /* the critical test window */
+    --quiet:#7a879c;       /* idle phase */
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(20,30,50,.05),0 6px 20px rgba(20,30,50,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0e131a; --panel:#161d27; --panel-2:#121822;
+      --ink:#e7ecf3; --ink-soft:#98a4b6; --line:#28323f;
+      --accent:#4aa8cf; --grad:#e56aa0; --measure:#3bbaa4;
+      --active:#dda155; --trailing:#ec5b62; --quiet:#8592a6;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e131a; --panel:#161d27; --panel-2:#121822;
+    --ink:#e7ecf3; --ink-soft:#98a4b6; --line:#28323f;
+    --accent:#4aa8cf; --grad:#e56aa0; --measure:#3bbaa4;
+    --active:#dda155; --trailing:#ec5b62; --quiet:#8592a6;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --paper:#eef1f5; --panel:#ffffff; --panel-2:#f6f8fb;
+    --ink:#1a2331; --ink-soft:#586279; --line:#d7dde6;
+    --accent:#2b7ea6; --grad:#c8377a; --measure:#1c8a78;
+    --active:#c9832a; --trailing:#d8434b; --quiet:#7a879c;
+    --shadow:0 1px 2px rgba(20,30,50,.05),0 6px 20px rgba(20,30,50,.06);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:940px;margin:0 auto;padding:48px 22px 72px;}
+  .mono{font-family:var(--mono);font-size:.92em;}
+  .dim{color:var(--ink-soft);}
+  .muted{color:var(--ink-soft);font-size:.9em;}
+
+  header.head{margin-bottom:40px;}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--accent);margin:0 0 12px;}
+  h1{font-size:clamp(26px,4.4vw,38px);line-height:1.15;margin:0 0 12px;
+    text-wrap:balance;letter-spacing:-.01em;font-weight:680;}
+  .lede{font-size:17px;color:var(--ink-soft);max-width:64ch;margin:0;}
+
+  section{margin-top:52px;}
+  .sec-h{display:flex;align-items:baseline;gap:12px;margin:0 0 6px;}
+  .sec-n{font-family:var(--mono);font-size:13px;color:var(--accent);
+    border:1px solid var(--line);border-radius:6px;padding:2px 8px;}
+  h2{font-size:21px;margin:0;font-weight:640;letter-spacing:-.01em;}
+  .sec-sub{color:var(--ink-soft);font-size:14.5px;margin:8px 0 24px;max-width:66ch;}
+
+  /* ---------- architecture ---------- */
+  .arch{display:flex;flex-direction:column;align-items:center;gap:0;}
+  .node{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:16px 20px;box-shadow:var(--shadow);text-align:center;}
+  .node--world{border-top:3px solid var(--active);}
+  .node--gru{border-top:3px solid var(--accent);}
+  .node--ema{border-top:3px solid var(--measure);}
+  .node__tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--active);}
+  .node__title{font-size:16px;font-weight:600;margin-top:2px;}
+  .node__line{margin-top:7px;font-size:14px;}
+  .node__note{margin-top:8px;font-size:12.5px;color:var(--ink-soft);}
+  .grad-ink{color:var(--grad);font-weight:600;}
+  .chips{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
+  .chip{font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:999px;
+    border:1px dashed var(--line);color:var(--ink-soft);}
+  .chip--on{border-style:solid;border-color:var(--accent);color:var(--accent);}
+
+  .flow{height:38px;display:flex;align-items:center;justify-content:center;
+    position:relative;width:2px;}
+  .flow::before{content:"";position:absolute;top:0;bottom:0;left:50%;
+    width:2px;background:var(--line);transform:translateX(-50%);}
+  .flow::after{content:"▼";position:absolute;bottom:-2px;left:50%;
+    transform:translateX(-50%);color:var(--line);font-size:11px;}
+  .flow__lbl{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    white-space:nowrap;font-size:12px;color:var(--ink-soft);
+    background:var(--paper);padding:0 6px;}
+  .flow--fan::before{background:var(--line);}
+
+  .heads{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+    width:100%;margin-top:6px;}
+  .head{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:15px 15px 0;box-shadow:var(--shadow);display:flex;flex-direction:column;
+    overflow:hidden;}
+  .head--pred{border-top:3px solid var(--accent);}
+  .head--aux{border-top:3px solid var(--grad);}
+  .head--probe{border-top:3px solid var(--measure);}
+  .head__hd{font-weight:650;font-size:15.5px;}
+  .head__bd{font-size:13.5px;color:var(--ink-soft);margin:7px 0 14px;flex:1;}
+  .head__ft{margin:0 -15px;padding:10px 15px;font-size:12.5px;font-weight:600;
+    border-top:1px solid var(--line);}
+  .ft--accent{color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent);}
+  .ft--grad{color:var(--grad);background:color-mix(in srgb,var(--grad) 10%,transparent);}
+  .ft--measure{color:var(--measure);background:color-mix(in srgb,var(--measure) 9%,transparent);}
+
+  .callouts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;}
+  .no-chip{font-family:var(--mono);font-size:13px;font-weight:600;padding:6px 14px;
+    border-radius:8px;color:var(--trailing);
+    background:color-mix(in srgb,var(--trailing) 10%,transparent);
+    border:1px solid color-mix(in srgb,var(--trailing) 35%,transparent);}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:22px;
+    font-size:12.5px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .swatch{width:22px;height:0;border-top-width:2.5px;border-top-style:solid;display:inline-block;}
+  .sw-data{border-top-color:var(--line);}
+  .sw-grad{border-top-color:var(--grad);border-top-style:dashed;}
+
+  /* ---------- svg timeline ---------- */
+  .figbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:14px;overflow-x:auto;}
+  .figbox svg{display:block;width:100%;min-width:620px;height:auto;font-family:var(--sans);}
+  .s-lane-lbl{fill:var(--ink-soft);font-size:13px;font-weight:600;}
+  .s-box{fill:var(--panel-2);stroke:var(--line);}
+  .s-ink{fill:var(--ink);}
+  .s-soft{fill:var(--ink-soft);}
+  .s-mono{font-family:var(--mono);}
+  .wave-base{fill:none;stroke:var(--quiet);stroke-width:2.4;}
+  .wave-act{fill:none;stroke:var(--active);stroke-width:3;}
+  .band-q{fill:var(--quiet);fill-opacity:.16;}
+  .band-a{fill:var(--active);fill-opacity:.20;}
+  .band-t{fill:var(--trailing);fill-opacity:.22;}
+  .band-lbl{fill:var(--ink);font-size:14px;font-weight:600;}
+  .sep{stroke:var(--line);stroke-width:1.4;stroke-dasharray:5 5;}
+  .t-ok{fill:var(--measure);font-weight:600;}
+  .t-crit{fill:var(--trailing);font-weight:700;}
+  .tag-crit{fill:var(--trailing);}
+  .ann{fill:var(--ink-soft);font-size:12.5px;}
+
+  /* ---------- two-phase bar ---------- */
+  .phasebar{display:grid;grid-template-columns:100fr 80fr;gap:12px;margin-top:6px;}
+  @media (max-width:560px){.phasebar{grid-template-columns:1fr;}}
+  .pcard{border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+    background:var(--panel);box-shadow:var(--shadow);}
+  .pcard h3{margin:0 0 3px;font-size:15.5px;}
+  .pcard .steps{font-family:var(--mono);font-size:12px;color:var(--ink-soft);}
+  .pcard--1{border-left:4px solid var(--quiet);}
+  .pcard--2{border-left:4px solid var(--grad);}
+  .pcard ul{margin:11px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-soft);}
+  .pcard li{margin:4px 0;}
+  .pcard li b{color:var(--ink);font-weight:600;}
+
+  .forces-wrap{margin-top:20px;}
+  .forces-lbl{font-size:13.5px;font-weight:600;color:var(--ink);margin:0 0 12px;}
+  .forces{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media (max-width:560px){.forces{grid-template-columns:1fr;}}
+  .force{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:13px 15px;box-shadow:var(--shadow);}
+  .force__hd{font-size:14px;font-weight:640;}
+  .force__bar{height:9px;border-radius:999px;background:var(--panel-2);
+    margin:10px 0 8px;overflow:hidden;border:1px solid var(--line);}
+  .force__bar span{display:block;height:100%;border-radius:999px;}
+  .force--mse .force__bar span{background:var(--accent);}
+  .force--aux .force__bar span{background:var(--grad);}
+  .force__bar--none{background:repeating-linear-gradient(45deg,transparent,transparent 4px,var(--line) 4px,var(--line) 6px);}
+  .force__cap{font-size:12px;color:var(--ink-soft);}
+  .why{margin-top:16px;padding:15px 18px;border-radius:10px;
+    background:color-mix(in srgb,var(--accent) 7%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
+    font-size:13.6px;}
+  .why b{color:var(--accent);}
+
+  /* ---------- verdict ---------- */
+  .verdict{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;}
+  .vcard{flex:1;min-width:220px;border-radius:12px;padding:18px 20px;
+    border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);}
+  .vcard .big{font-size:34px;font-weight:720;font-family:var(--mono);letter-spacing:-.02em;}
+  .vcard.now .big{color:var(--trailing);}
+  .vcard.next .big{color:var(--measure);}
+  .vcard .cap{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .takeaway{margin-top:22px;padding:18px 22px;border-radius:12px;
+    background:var(--panel-2);border:1px solid var(--line);font-size:15px;}
+  .takeaway b{color:var(--accent);}
+
+  footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--ink-soft);}
+  a{color:var(--accent);}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">Paper 1 · §3.3 · Encoding Gap</p>
+    <h1>实验 3：编码鸿沟 — 架构与时序</h1>
+    <p class="lede">同一个最小系统，问一个新问题：动作从观测里消失后，<b>h 还读不读得出"我刚才动过"</b>？这张图拆开它的数据流、梯度流，和 BurstGate 的三相位时序。</p>
+  </header>
+
+  <!-- ARCHITECTURE -->
+  <section>
+    <div class="sec-h"><span class="sec-n">A</span><h2>架构 · 数据流与梯度流</h2></div>
+    <p class="sec-sub">数据自上而下流；<span style="color:var(--grad);font-weight:600">梯度</span>只在特定路径回流。关键：<span class="mono">h_multi</span> 每步 <span class="grad-ink">detach()</span>，所以 pred / probe 的梯度<b>进不了 GRU</b>；只有 aux 借未-detach 的 <span class="mono">h_live</span> 能回流——这就是"诱导 vs 测量"的分野。</p>
+
+    <div class="arch">
+      <div class="node node--world">
+        <span class="node__tag">世界 World · 外源</span>
+        <div class="node__title">signal（4 通道正弦）</div>
+        <div class="node__line mono">obs[0] += γ · action <span class="muted">← 随机 burst（非 W_action）</span></div>
+      </div>
+
+      <div class="flow"><span class="flow__lbl mono">obs (4d)</span></div>
+
+      <div class="node node--gru">
+        <div class="node__title">GRU cell <span class="mono dim">(192)</span></div>
+        <div class="chips"><span class="chip">Phase 1 冻结</span><span class="chip chip--on">Phase 2 训练（受 aux 驱动）</span></div>
+      </div>
+
+      <div class="flow"><span class="flow__lbl mono">h_gru</span></div>
+
+      <div class="node node--ema">
+        <div class="node__title">multi-scale EMA → <span class="mono">h_multi</span> <span class="dim mono">(192d)</span></div>
+        <div class="node__note">每步 <span class="grad-ink mono">detach()</span> —— 切断 pred / probe 通往 GRU 的梯度</div>
+      </div>
+
+      <div class="flow flow--fan"><span class="flow__lbl mono">h_multi → 3 个头</span></div>
+
+      <div class="heads">
+        <div class="head head--pred">
+          <div class="head__hd">pred <span class="mono dim">192→4</span></div>
+          <div class="head__bd">预测 obs（重建世界）。h_multi 已 detach，梯度只到自己。</div>
+          <div class="head__ft ft--accent">MSE → 只训 pred</div>
+        </div>
+        <div class="head head--aux">
+          <div class="head__hd">aux <span class="mono dim">192→3</span></div>
+          <div class="head__bd">active / trailing / quiet 三分类，且 trailing 类加权——把编码机会开到最大。</div>
+          <div class="head__ft ft--grad">↰ 诱导：梯度经 h_live 回流训 GRU</div>
+        </div>
+        <div class="head head--probe">
+          <div class="head__hd">probe <span class="mono dim">192→1</span></div>
+          <div class="head__bd">读 <span class="mono">detached h</span>，判"是不是 trailing"。只读不塞。</div>
+          <div class="head__ft ft--measure">✂ 测量：梯度不回流</div>
+        </div>
+      </div>
+
+      <div class="callouts">
+        <span class="no-chip">❌ 无 trace</span>
+        <span class="no-chip">❌ 无 W_action</span>
+      </div>
+
+      <div class="legend">
+        <span><i class="swatch sw-data"></i> 数据流</span>
+        <span><i class="swatch sw-grad"></i> 梯度流（诱导）</span>
+        <span>✂ detach = 梯度切断</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section>
+    <div class="sec-h"><span class="sec-n">B</span><h2>时序 · BurstGate 三相位</h2></div>
+    <p class="sec-sub">Phase 2 里，动作被随机地开关成 burst，切出三个相位。<b style="color:var(--trailing)">trailing</b>（动作刚停后 50 步）是检验点：此刻 obs 已回到基线，动作不在输入里——问的是 <b>h 记不记得</b>。</p>
+
+    <div class="figbox">
+      <svg viewBox="0 0 1000 330" role="img" aria-label="BurstGate 三相位时序图">
+        <!-- region separators -->
+        <line class="sep" x1="160" y1="28" x2="160" y2="308"/>
+        <line class="sep" x1="470" y1="28" x2="470" y2="308"/>
+        <line class="sep" x1="720" y1="28" x2="720" y2="308"/>
+
+        <!-- lane 1: obs[0] -->
+        <text class="s-lane-lbl s-mono" x="8" y="40">obs[0]</text>
+        <polyline class="wave-base" points="40,96 80,84 120,96 160,84 200,96 240,84 280,96 320,84 360,96 400,84 440,96 480,84 520,96 560,84 600,96 640,84 680,96 720,84 760,96 800,84 840,96 880,84 920,96 960,84 980,90"/>
+        <!-- action bump during ACTIVE -->
+        <polyline class="wave-act" points="160,110 190,60 220,110 250,60 280,110 310,60 340,110 370,60 400,110 430,60 460,110"/>
+        <text class="s-soft" x="315" y="52" text-anchor="middle" font-size="12.5">＋γ·action（随机 burst）</text>
+        <text class="t-crit" x="595" y="66" text-anchor="middle" font-size="12.5">↓ action 消失，obs 回到基线</text>
+
+        <!-- lane 2: phase bands -->
+        <text class="s-lane-lbl" x="8" y="150">相位</text>
+        <rect class="band-q" x="40"  y="158" width="120" height="46" rx="5"/>
+        <rect class="band-a" x="160" y="158" width="310" height="46" rx="5"/>
+        <rect class="band-t" x="470" y="158" width="250" height="46" rx="5"/>
+        <rect class="band-q" x="720" y="158" width="260" height="46" rx="5"/>
+        <text class="s-soft"  x="100" y="186" text-anchor="middle" font-size="13">quiet</text>
+        <text class="band-lbl" x="315" y="186" text-anchor="middle">ACTIVE · 动作进行</text>
+        <text class="band-lbl" x="595" y="181" text-anchor="middle" fill="var(--trailing)">TRAILING</text>
+        <text class="tag-crit" x="595" y="197" text-anchor="middle" font-size="11.5" class="s-mono">停后 50 步 · 关键检验</text>
+        <text class="s-soft"  x="850" y="186" text-anchor="middle" font-size="13">quiet</text>
+
+        <!-- lane 3: readable? -->
+        <text class="s-lane-lbl" x="8" y="238">h 读得出<tspan class="s-mono">"我动过"</tspan>?</text>
+        <text class="t-ok"   x="315" y="272" text-anchor="middle" font-size="13.5">✓ 平凡</text>
+        <text class="s-soft" x="315" y="292" text-anchor="middle" font-size="11.5">动作就在 obs 里</text>
+        <text class="t-crit" x="595" y="268" text-anchor="middle" font-size="14">？ 问 h 记不记得</text>
+        <text class="t-crit" x="595" y="290" text-anchor="middle" font-size="15" class="s-mono">→ recall ≈ 12%</text>
+        <text class="s-soft" x="850" y="276" text-anchor="middle" font-size="15">—</text>
+      </svg>
+    </div>
+    <p class="sec-sub" style="margin-top:14px;">读法：obs[0] 只在 <b style="color:var(--active)">ACTIVE</b> 期被动作顶起；一进 <b style="color:var(--trailing)">TRAILING</b> 就回到基线——动作从输入消失了。可 probe 只有 <b class="mono">12%</b>（≈随机）：缺 trace 通道，h 保不住"我刚动过"，连 aux 全力施压也逼不出来。</p>
+  </section>
+
+  <!-- TWO-PHASE TRAINING -->
+  <section>
+    <div class="sec-h"><span class="sec-n">C</span><h2>两阶段训练时序</h2></div>
+    <p class="sec-sub">承接 reservoir 逻辑：先把感知练稳，再解冻 GRU 施压。detach 的有无，是"GRU 能不能被训"的总开关。</p>
+    <div class="phasebar">
+      <div class="pcard pcard--1">
+        <h3>Phase 1 · 感知（reservoir）</h3>
+        <div class="steps">≈ 100K 步 · step_frozen（h detach）</div>
+        <ul>
+          <li>动作全程开，只训 <b>pred</b></li>
+          <li>GRU / 无 W_action <b>冻结</b> → 把 h 练成稳定 attractor</li>
+          <li>无 aux、无 probe</li>
+        </ul>
+      </div>
+      <div class="pcard pcard--2">
+        <h3>Phase 2 · 施压 + 测量</h3>
+        <div class="steps">≈ 80K 步 · step_live（h_live 不 detach）</div>
+        <ul>
+          <li>GRU 解冻；<b>pred</b> 仍被 MSE 训（跟上移动的 h）</li>
+          <li><b>aux</b> 梯度经 h_live 回流 → 训 <b>GRU</b>（诱导）</li>
+          <li><b>probe</b> 读 detached h → 只测量 <b>trailing recall</b></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="forces-wrap">
+      <p class="forces-lbl">Phase 2 里三股力同时作用在 h 上（条宽 = 相对强度）：</p>
+      <div class="forces">
+        <div class="force force--mse">
+          <div class="force__hd">MSE <span class="dim mono">· pred</span></div>
+          <div class="force__bar"><span style="width:100%"></span></div>
+          <div class="force__cap">权重 1 · 主力 —— 把 h 锚成世界模型</div>
+        </div>
+        <div class="force force--aux">
+          <div class="force__hd">aux <span class="dim mono">· h_live</span></div>
+          <div class="force__bar"><span style="width:12%"></span></div>
+          <div class="force__cap">权重 0.1 · 轻推 —— 想加"我在动"</div>
+        </div>
+        <div class="force force--probe">
+          <div class="force__hd">probe <span class="dim mono">· detached h</span></div>
+          <div class="force__bar force__bar--none"></div>
+          <div class="force__cap">旁测 · 不施力</div>
+        </div>
+      </div>
+      <p class="why">为什么 pred 还在训？Phase 2 <b>解冻了 GRU</b>，h 成了移动靶：pred 要跟上，更要靠 <b>MSE（主力）</b>把 h 锚定成世界模型——否则 aux 会把 h 劫持成纯 trailing 分类器，实验就不再是"预测系统能否读出自我"了。</p>
+    </div>
+  </section>
+
+  <!-- VERDICT -->
+  <section>
+    <div class="sec-h"><span class="sec-n">D</span><h2>结果与含义</h2></div>
+    <div class="verdict">
+      <div class="vcard now">
+        <div class="big">≈ 12%</div>
+        <div class="cap">exp3 · 无 trace（4d）<br>trailing recall ≈ 随机 → 鸿沟存在</div>
+      </div>
+      <div class="vcard next">
+        <div class="big">60%+</div>
+        <div class="cap">exp4 · 加 1 维 trace（5d）<br>同一世界、同一 aux/probe → 鸿沟被跨过</div>
+      </div>
+    </div>
+    <div class="takeaway">
+      <b>发现不在"h 会忘"，在这三点：</b>它不是必然（1 维 trace 就翻盘）· 监督替代不了（aux 手握标签仍 12%）· 决定成败的是<b>「经输入通道提供」而非「经损失注入」</b>。缺持久通道时，架构里不存在的东西，监督塞不进去。
+    </div>
+  </section>
+
+  <footer>
+    对应代码：<span class="mono">experiments/exp3_encoding_gap.py</span> · 解读手册 §7 exp3 节。图示为概念示意，步数/相位宽度非按真实比例。
+  </footer>
+</div>
