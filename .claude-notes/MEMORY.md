@@ -6,3 +6,4 @@
 - [Project: Architecture causal ladder](project_architecture_causal_ladder.md) — each experiment's Pearl causal ceiling read from architecture dimensions (esp. dual-head 193rd action-input dim)
 - [Project: Level 3→4 meta-encoding-gap experiment](project_level4_metagap.md) — planned extension via ρ_t input channel (currently paused)
 - [Project: Three Levels of Learning — planned paper](project_three_levels_paper.md) — independent theoretical paper: reservoir computing + deep learning as levels of unified framework (Dynamics/Readout/Shaping); "learning is alignment, not encoding"
+- [Project: Trace ablation experiment — pending](project_trace_ablation.md) — planned ablation to test if trace-specific or generic-1D-channel drives exp4 recall boost (3 ablations: random noise, AR(1), β sweep)
